@@ -744,7 +744,7 @@ test('keeps terminal empty Bash tool arguments invalid in non-streaming response
       type: 'tool_use',
       id: 'function-call-1',
       name: 'Bash',
-      input: { raw: '' },
+      input: {},
     },
   ])
 })
@@ -1094,7 +1094,7 @@ test('keeps terminal whitespace-only Bash arguments invalid in streaming respons
     .map(event => (event.delta as Record<string, unknown>).partial_json)
     .join('')
 
-  expect(normalizedInput).toBe('{"raw":" "}')
+  expect(normalizedInput).toBe('{}')
 })
 
 test('normalizes streaming Bash arguments that begin with bracket syntax', async () => {
@@ -1423,7 +1423,7 @@ test('does not normalize incomplete streamed Bash commands when finish_reason is
   expect(streamedInput).toBe('rg --fi')
 })
 
-test('does not repair truncated Bash objects that do not contain command', async () => {
+test('repairs truncated JSON objects even without command field', async () => {
   globalThis.fetch = (async (_input, _init) => {
     const chunks = makeStreamChunks([
       {
@@ -1496,7 +1496,7 @@ test('does not repair truncated Bash objects that do not contain command', async
     .map(event => (event.delta as Record<string, unknown>).partial_json)
     .join('')
 
-  expect(streamedInput).toBe('{"raw":"{\\"cwd\\":\\"/tmp\\""}')
+  expect(streamedInput).toBe('{"cwd":"/tmp"}')
 })
 
 test('preserves raw input for unknown plain string tool arguments', async () => {
@@ -1554,7 +1554,7 @@ test('preserves raw input for unknown plain string tool arguments', async () => 
       type: 'tool_use',
       id: 'function-call-1',
       name: 'UnknownTool',
-      input: { raw: 'pwd' },
+      input: {},
     },
   ])
 })

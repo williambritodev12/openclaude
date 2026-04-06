@@ -44,6 +44,7 @@ import { sanitizeSchemaForOpenAICompat } from '../../utils/schemaSanitizer.js'
 import { redactSecretValueForDisplay } from '../../utils/providerProfile.js'
 import {
   normalizeToolArguments,
+  hasToolFieldMapping,
 } from './toolArgumentNormalization.js'
 
 type SecretValueSource = Partial<{
@@ -486,7 +487,7 @@ const JSON_REPAIR_SUFFIXES = [
 function repairPossiblyTruncatedObjectJson(raw: string): string | null {
   try {
     const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) && typeof (parsed as Record<string, unknown>).command === 'string'
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? raw
       : null
   } catch {
@@ -494,12 +495,7 @@ function repairPossiblyTruncatedObjectJson(raw: string): string | null {
       try {
         const repaired = raw + combo
         const parsed = JSON.parse(repaired)
-        if (
-          parsed &&
-          typeof parsed === 'object' &&
-          !Array.isArray(parsed) &&
-          typeof (parsed as Record<string, unknown>).command === 'string'
-        ) {
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           return repaired
         }
       } catch {}
@@ -619,7 +615,7 @@ async function* openaiStreamToAnthropic(
 
               const toolBlockIndex = contentBlockIndex
               const initialArguments = tc.function.arguments ?? ''
-              const normalizeAtStop = tc.function.name === 'Bash'
+              const normalizeAtStop = hasToolFieldMapping(tc.function.name)
               activeToolCalls.set(tc.index, {
                 id: tc.id,
                 name: tc.function.name,

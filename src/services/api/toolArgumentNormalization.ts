@@ -26,6 +26,10 @@ function getPlainStringToolArgumentField(toolName: string): string | null {
   return STRING_ARGUMENT_TOOL_FIELDS[toolName] ?? null
 }
 
+export function hasToolFieldMapping(toolName: string): boolean {
+  return toolName in STRING_ARGUMENT_TOOL_FIELDS
+}
+
 function wrapPlainStringToolArguments(
   toolName: string,
   value: string,
@@ -46,25 +50,20 @@ export function normalizeToolArguments(
     if (isRecord(parsed)) {
       return parsed
     }
-    if (toolName === 'Bash') {
-      if (typeof parsed === 'string') {
-        if (isBlankString(parsed)) {
-          return { raw: parsed }
-        }
-        return wrapPlainStringToolArguments(toolName, parsed) ?? parsed
-      }
-      return parsed
-    }
-    if (typeof parsed === 'string') {
+    // Parsed as a non-object JSON value (string, number, boolean, null, array)
+    if (typeof parsed === 'string' && !isBlankString(parsed)) {
       return wrapPlainStringToolArguments(toolName, parsed) ?? parsed
     }
+    // For blank strings, booleans, null, arrays — pass through as-is
+    // and let Zod schema validation produce a meaningful error
     return parsed
   } catch {
+    // rawArguments is not valid JSON — treat as a plain string
     if (isBlankString(rawArguments) || isLikelyStructuredObjectLiteral(rawArguments)) {
-      return { raw: rawArguments }
+      // Blank or looks like a malformed object literal — don't wrap into
+      // a tool field to avoid turning garbage into executable input
+      return {}
     }
-    return (
-      wrapPlainStringToolArguments(toolName, rawArguments) ?? { raw: rawArguments }
-    )
+    return wrapPlainStringToolArguments(toolName, rawArguments) ?? {}
   }
 }

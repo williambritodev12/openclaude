@@ -19,20 +19,18 @@ describe('normalizeToolArguments', () => {
       ).toEqual({ command: 'echo hi' })
     })
 
-    test('returns { raw } for blank string', () => {
-      expect(normalizeToolArguments('Bash', '')).toEqual({ raw: '' })
-      expect(normalizeToolArguments('Bash', '   ')).toEqual({ raw: '   ' })
+    test('returns empty object for blank string', () => {
+      expect(normalizeToolArguments('Bash', '')).toEqual({})
+      expect(normalizeToolArguments('Bash', '   ')).toEqual({})
     })
 
-    test('returns { raw } for JSON-encoded blank string', () => {
-      expect(normalizeToolArguments('Bash', '""')).toEqual({ raw: '' })
-      expect(normalizeToolArguments('Bash', '"  "')).toEqual({ raw: '  ' })
+    test('returns parsed blank for JSON-encoded blank string', () => {
+      expect(normalizeToolArguments('Bash', '""')).toEqual('')
+      expect(normalizeToolArguments('Bash', '"  "')).toEqual('  ')
     })
 
-    test('returns { raw } for likely structured object literal that fails parse', () => {
-      expect(normalizeToolArguments('Bash', '{ "command": "pwd"')).toEqual({
-        raw: '{ "command": "pwd"',
-      })
+    test('returns empty object for malformed structured object literal', () => {
+      expect(normalizeToolArguments('Bash', '{ "command": "pwd"')).toEqual({})
     })
 
     test.each([
@@ -40,9 +38,9 @@ describe('normalizeToolArguments', () => {
       ["{'command':'pwd'}"],
       ['{command: pwd}'],
     ])(
-      'returns { raw } for malformed object-shaped string %s (does not wrap into command)',
+      'returns empty object for malformed object-shaped string %s (does not wrap into command)',
       (input) => {
-        expect(normalizeToolArguments('Bash', input)).toEqual({ raw: input })
+        expect(normalizeToolArguments('Bash', input)).toEqual({})
       },
     )
 
@@ -157,10 +155,8 @@ describe('normalizeToolArguments', () => {
   })
 
   describe('unknown tools', () => {
-    test('returns { raw } for plain string', () => {
-      expect(normalizeToolArguments('UnknownTool', 'some value')).toEqual({
-        raw: 'some value',
-      })
+    test('returns empty object for plain string (no known field mapping)', () => {
+      expect(normalizeToolArguments('UnknownTool', 'some value')).toEqual({})
     })
 
     test('passes through structured JSON object', () => {
@@ -175,7 +171,7 @@ describe('normalizeToolArguments', () => {
       expect(normalizeToolArguments('UnknownTool', '[]')).toEqual([])
     })
 
-    test('returns JSON-encoded string as parsed string for unknown tools', () => {
+    test('returns parsed string for JSON-encoded string on unknown tools', () => {
       expect(normalizeToolArguments('UnknownTool', '"hello"')).toEqual(
         'hello',
       )
